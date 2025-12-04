@@ -1,0 +1,120 @@
+/** @import must precede all other statements */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /**
+   * Tailwind CSS theme
+   * tailwind.config.ts expects the following color variables to be expressed as HSL values.
+   * A different format will require also updating the theme in tailwind.config.ts.
+  */
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 15 45% 8%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 15 45% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 15 45% 8%;
+
+    --primary: 142 71% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 34 97% 56%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 217 33% 93%;
+    --muted-foreground: 217 12% 43%;
+
+    --accent: 142 71% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 93%;
+    --input: 217 33% 93%;
+    --ring: 142 71% 45%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 15 45% 8%;
+
+    --sidebar-primary: 142 71% 45%;
+
+    --sidebar-primary-foreground: 0 0% 100%;
+
+    --sidebar-accent: 142 71% 55%;
+
+    --sidebar-accent-foreground: 0 0% 100%;
+
+    --sidebar-border: 217 33% 93%;
+
+    --sidebar-ring: 142 71% 45%;
+  }
+
+  .dark {
+    --background: 15 24% 12%;
+    --foreground: 0 0% 98%;
+
+    --card: 15 24% 16%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 15 24% 16%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 142 71% 50%;
+    --primary-foreground: 15 24% 12%;
+
+    --secondary: 34 97% 56%;
+    --secondary-foreground: 15 24% 12%;
+
+    --muted: 217 32% 25%;
+    --muted-foreground: 217 12% 65%;
+
+    --accent: 142 71% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 217 32% 25%;
+    --input: 217 32% 25%;
+    --ring: 142 71% 50%;
+    --sidebar-background: 15 24% 12%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 142 71% 50%;
+    --sidebar-primary-foreground: 15 24% 12%;
+    --sidebar-accent: 142 71% 55%;
+    --sidebar-accent-foreground: 15 24% 12%;
+    --sidebar-border: 217 32% 25%;
+    --sidebar-ring: 142 71% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  :where(p, span, li, h1, h2, h3, h4, h5, h6, a, button, label, td, th) {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  pre,
+  code {
+    overflow-x: auto;
+    white-space: pre;
+  }
+}

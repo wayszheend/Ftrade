@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { se } from "date-fns/locale";
+import { fa } from "zod/v4/locales";  
+import { apiFarmerVerification } from "@shared/api";
 
 export default function SellerVerification() {
   const navigate = useNavigate();
@@ -12,55 +13,71 @@ export default function SellerVerification() {
 
   const userId = location.state?.userId;
 
-  // ✅ PROTEKSI JIKA USER ID HILANG
-  if (!userId) {
-    navigate("/login");
-    return null;
-  }
+  useEffect(() => {
+    if (!userId) {
+      toast({
+        title: "Session habis",
+        description: "Silakan login kembali",
+        variant: "destructive",
+      });
+      navigate("/login");
+    }
+  }, [userId, navigate, toast]);
 
   const [form, setForm] = useState({
     farmerCardNumber: "",
-    sellerId: "",
     farmerCardName: "",
     organizationName: "",
     organizationId: "",
   });
 
-  const handleChange = (e: any) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    const res = await fetch("/api/farmer-verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        seller_id: form.sellerId,
-        farmer_card_number: form.farmerCardNumber,
-        farmer_card_name: form.farmerCardName,
-        organization_name: form.organizationName,
-        organization_id: form.organizationId,
-      }),
-    });
+  try {
+    setLoading(true);
 
-    const data = await res.json();
-
-    if (data.success) {
+    const payload = {
+      user_id: userId,
+      farmer_card_number: form.farmerCardNumber,
+      farmer_card_name: form.farmerCardName,
+      organization_name: form.organizationName,
+      organization_id: form.organizationId,
+    };
+    const res = await apiFarmerVerification(payload);
+    if (res.success) {
       toast({
         title: "Berhasil",
-        description: "Permintaan verifikasi dikirim, menunggu persetujuan admin",
+        description: "Permohonan verifikasi telah dikirim",
       });
-      navigate("/login");
+      navigate("/");
     } else {
       toast({
         title: "Gagal",
-        description: data.message,
+        description: res.message || "Terjadi kesalahan saat mengirim verifikasi",
         variant: "destructive",
       });
     }
-  };
+    setLoading(false);
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : "Terjadi kesalahan saat mengirim verifikasi";
+    toast({
+      title: "Error",
+      description: errorMessage,
+      variant: "destructive",
+    });
+    setLoading(false);
+  }
+};
 
   return (
     <Layout>
@@ -71,33 +88,41 @@ export default function SellerVerification() {
           <input
             name="farmerCardNumber"
             placeholder="Nomor Kartu Petani"
+            value={form.farmerCardNumber}
             onChange={handleChange}
             required
             className="w-full border p-2 rounded"
           />
+
           <input
             name="farmerCardName"
             placeholder="Nama di Kartu"
+            value={form.farmerCardName}
             onChange={handleChange}
             required
             className="w-full border p-2 rounded"
           />
+
           <input
             name="organizationName"
             placeholder="Nama Kelompok Tani"
+            value={form.organizationName}
             onChange={handleChange}
             required
             className="w-full border p-2 rounded"
           />
+
           <input
             name="organizationId"
             placeholder="ID Organisasi"
+            value={form.organizationId}
             onChange={handleChange}
             required
             className="w-full border p-2 rounded"
           />
-          <Button type="submit" className="w-full">
-            Kirim Verifikasi
+
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Mengirim..." : "Kirim Verifikasi"}
           </Button>
         </form>
       </div>

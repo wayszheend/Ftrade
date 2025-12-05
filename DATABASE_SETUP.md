@@ -296,18 +296,36 @@ CREATE TABLE `categories` (
 ### 12. farmer verification
 
  for approved the farmer
+```sql
+CREATE TABLE `farmer_verifications` (
+  `id`INT (11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` INT(10) UNSIGNED NOT NULL,
+  `seller_id` INT(10) UNSIGNED NOT NULL,
 
-'''sql
-CREATE TABLE farmer_verifications (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  seller_user_id INT NOT NULL,
-  farmer_card_number VARCHAR(50),
-  organization_name VARCHAR(100),
-  is_verified TINYINT(1) DEFAULT 0,
+  `farmer_card_number` VARCHAR(50) NOT NULL,
+  `farmer_card_name` VARCHAR(100) NOT NULL,
+  `organization_name` VARCHAR(100) NOT NULL,
+  `organization_id` VARCHAR(50) NOT NULL,
+
+  `verification_status` ENUM('pending','approved','rejected') DEFAULT 'pending',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (seller_user_id) REFERENCES users(id)
-);
 
+  PRIMARY KEY (id),
+  INDEX `idx_user_id`(user_id),
+  INDEX `idx_seller_id` (seller_id),
+
+  CONSTRAINT fk_fv_user
+    FOREIGN KEY (user_id)
+    REFERENCES users(id)
+    ON DELETE CASCADE,
+
+  CONSTRAINT fk_fv_seller
+    FOREIGN KEY (seller_id)
+    REFERENCES sellers(id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+```
 
 ## Sample Data Insertion
 

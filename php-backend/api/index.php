@@ -241,7 +241,7 @@ $user['verification_status'] = $verif['verification_status'];
         } else {
         sendResponse(false, 'Invalid auth action', null, 400);
     }
-
+}
 function handleProducts($method, $resource) {
     global $conn;
 
@@ -385,7 +385,7 @@ function handleOrders($method, $resource) {
             $stmt = $conn->prepare('SELECT * FROM orders WHERE id = ?');
             $stmt->execute([$resource]);
             $order = $stmt->fetch(PDO::FETCH_ASSOC);
-            
+
             if ($order) {
                 $itemStmt = $conn->prepare('SELECT * FROM order_items WHERE order_id = ?');
                 $itemStmt->execute([$order['id']]);
@@ -406,18 +406,8 @@ function handleOrders($method, $resource) {
 
             sendResponse(true, 'Orders retrieved', $orders);
         }
-    } elseif ($method === 'POST') {
-            $checkVerif = $conn->prepare("
-        SELECT fv.verification_status 
-        FROM farmer_verifications fv
-        WHERE fv.seller_id = ?
-        AND fv.verification_status = 'approved'
-        ");
-    $checkVerif->execute([$seller_id]);
 
-        if ($checkVerif->rowCount() === 0) {
-           sendResponse(false, 'Seller belum diverifikasi, tidak bisa menambah produk', null, 403);
-        }
+    } elseif ($method === 'POST') {
 
         $data = getJsonData();
 
@@ -433,6 +423,31 @@ function handleOrders($method, $resource) {
         $shipping_method = $data['shipping_method'] ?? null;
         $points_used = isset($data['points_used']) ? (int)$data['points_used'] : 0;
 
+        // ✅ AMBIL SELLER ID DARI PRODUK (BUKAN VARIABEL KOSONG)
+        $firstProductId = $items[0]['product_id'];
+        $sellerStmt = $conn->prepare("SELECT seller_id FROM products WHERE id = ?");
+        $sellerStmt->execute([$firstProductId]);
+        $sellerData = $sellerStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$sellerData) {
+            sendResponse(false, 'Seller tidak ditemukan', null, 404);
+        }
+
+        $seller_id = $sellerData['seller_id'];
+
+        // ✅ CEK VERIFIKASI SELLER
+        $checkVerif = $conn->prepare("
+            SELECT verification_status 
+            FROM farmer_verifications 
+            WHERE seller_id = ? 
+            AND verification_status = 'approved'
+        ");
+        $checkVerif->execute([$seller_id]);
+
+        if ($checkVerif->rowCount() === 0) {
+            sendResponse(false, 'Seller belum diverifikasi, tidak bisa checkout', null, 403);
+        }
+
         $totalAmount = 0;
         $discountAmount = 0;
 
@@ -440,24 +455,25 @@ function handleOrders($method, $resource) {
             $stmt = $conn->prepare('SELECT price FROM products WHERE id = ?');
             $stmt->execute([$item['product_id']]);
             $product = $stmt->fetch(PDO::FETCH_ASSOC);
+
             if ($product) {
                 $totalAmount += $product['price'] * $item['quantity'];
             }
         }
 
-        // Handle points discount (10 points = 2000 Rp)
-        $points_discount_amount = 0;
+        // ✅ DISKON POIN
         if ($points_used > 0) {
             $userStmt = $conn->prepare('SELECT points FROM users WHERE id = ?');
             $userStmt->execute([$buyer_id]);
             $user = $userStmt->fetch(PDO::FETCH_ASSOC);
 
             if ($user && $user['points'] >= $points_used) {
-                $points_discount_amount = ($points_used / 10) * 2000; // 10 points = 2000 Rp
+                $points_discount_amount = ($points_used / 10) * 2000;
                 $discountAmount += min($points_discount_amount, $totalAmount);
             }
         }
 
+        // ✅ DISKON VOUCHER
         if ($voucher_code) {
             $voucherStmt = $conn->prepare('SELECT * FROM vouchers WHERE code = ? AND is_active = 1 AND expires_at > NOW()');
             $voucherStmt->execute([$voucher_code]);
@@ -476,15 +492,28 @@ function handleOrders($method, $resource) {
             }
         }
 
-        // Ensure total discount doesn't exceed order total
         $discountAmount = min($discountAmount, $totalAmount);
         $finalTotal = $totalAmount - $discountAmount;
 
         $orderNumber = generateOrderNumber();
 
-        $orderStmt = $conn->prepare('INSERT INTO orders (order_number, buyer_id, total_amount, discount_amount, voucher_code, shipping_address, shipping_method, payment_method) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+        $orderStmt = $conn->prepare('
+            INSERT INTO orders 
+            (order_number, buyer_id, total_amount, discount_amount, voucher_code, shipping_address, shipping_method, payment_method) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ');
 
-        if ($orderStmt->execute([$orderNumber, $buyer_id, $finalTotal, $discountAmount, $voucher_code, $shipping_address, $shipping_method, $payment_method])) {
+        if ($orderStmt->execute([
+            $orderNumber, 
+            $buyer_id, 
+            $finalTotal, 
+            $discountAmount, 
+            $voucher_code, 
+            $shipping_address, 
+            $shipping_method, 
+            $payment_method
+        ])) {
+
             $order_id = $conn->lastInsertId();
 
             foreach ($items as $item) {
@@ -494,43 +523,54 @@ function handleOrders($method, $resource) {
 
                 if ($product) {
                     $subtotal = $product['price'] * $item['quantity'];
-                    $itemStmt = $conn->prepare('INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) VALUES (?, ?, ?, ?, ?)');
-                    $itemStmt->execute([$order_id, $item['product_id'], $item['quantity'], $product['price'], $subtotal]);
 
-                    $updateStmt = $conn->prepare('UPDATE products SET quantity_available = quantity_available - ? WHERE id = ?');
+                    $itemStmt = $conn->prepare('
+                        INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) 
+                        VALUES (?, ?, ?, ?, ?)
+                    ');
+                    $itemStmt->execute([
+                        $order_id, 
+                        $item['product_id'], 
+                        $item['quantity'], 
+                        $product['price'], 
+                        $subtotal
+                    ]);
+
+                    $updateStmt = $conn->prepare('
+                        UPDATE products 
+                        SET quantity_available = quantity_available - ? 
+                        WHERE id = ?
+                    ');
                     $updateStmt->execute([$item['quantity'], $item['product_id']]);
                 }
             }
 
-            // Award points for purchase (1 point per 1000 Rp spent)
+            // ✅ UPDATE POIN
             $points_earned = intval($finalTotal / 1000);
-            $new_user_points = 0;
 
             if ($points_earned > 0 || $points_used > 0) {
-                // Deduct used points and add earned points
-                $pointsStmt = $conn->prepare('UPDATE users SET points = points - ? + ? WHERE id = ?');
+                $pointsStmt = $conn->prepare('
+                    UPDATE users 
+                    SET points = points - ? + ? 
+                    WHERE id = ?
+                ');
                 $pointsStmt->execute([$points_used, $points_earned, $buyer_id]);
-
-                // Get updated points
-                $getUserStmt = $conn->prepare('SELECT points FROM users WHERE id = ?');
-                $getUserStmt->execute([$buyer_id]);
-                $userResult = $getUserStmt->fetch(PDO::FETCH_ASSOC);
-                $new_user_points = $userResult['points'] ?? 0;
             }
 
             sendResponse(true, 'Order created', [
                 'order_id' => $order_id,
                 'order_number' => $orderNumber,
-                'points_earned' => $points_earned,
-                'user_points' => $new_user_points
+                'points_earned' => $points_earned
             ], 201);
         } else {
             sendResponse(false, 'Failed to create order', null, 500);
         }
+
     } else {
         sendResponse(false, 'Method not allowed', null, 405);
     }
 }
+
 
 function handleUsers($method, $resource) {
     global $conn;
@@ -770,4 +810,5 @@ function handleCategories($method, $resource) {
         sendResponse(true, 'Categories retrieved', $categories);
     }
  }
-}
+  
+?>

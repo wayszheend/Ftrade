@@ -20,69 +20,89 @@ export default function Login() {
   const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
+  e.preventDefault();
+  setError("");
+  setIsLoading(true);
 
-    try {
-      const response = await apiLogin(email, password);
+  try {
+    const response = await apiLogin(email, password);
 
-      if (response.success) {
-        const user = response.data;
+    if (response.success) {
+      const user = response.data;
 
-        if (user?.role !== role) {
-          setError(`Akun ini terdaftar sebagai ${user?.role === 'buyer' ? 'pembeli' : 'penjual'}`);
-          setIsLoading(false);
+      // CEK ROLE BENAR
+      if (user?.role !== role) {
+        setError(`Akun ini terdaftar sebagai ${user?.role === 'buyer' ? 'pembeli' : 'penjual'}`);
+        setIsLoading(false);
+        return;
+      }
+
+      // =======================
+      //     SELLER LOGIN
+      // =======================
+      if (user.role === "seller") {
+        // SELLER BELUM VERIFIKASI
+        if (user.verification_status !== "approved") {
+          toast({
+            title: "Verifikasi Diperlukan",
+            description: "Akun seller Anda belum diverifikasi",
+            variant: "destructive"
+          });
+
+          navigate("/seller-verification", {
+            state: { userId: user.id }
+          });
           return;
         }
 
-       // ✅ JIKA SELLER → CEK VERIFIKASI DULU
- if (user.role === "seller") {
-  if (user.verification_status !== "approved") {
-    toast({
-      title: "Verifikasi Diperlukan",
-      description: "Akun seller Anda belum diverifikasi",
-      variant: "destructive"
-    });
+        // SELLER SUDAH VERIFIKASI → KE ADMIN
+        login(user);
 
-    navigate("/seller-verific ation", {
-      state: { userId: user.id }
-    });
-    return;
-  }
-}
-
-
-// ✅ JIKA BUYER ATAU SELLER SUDAH TERVERIFIKASI
-login(user);
-
-toast({
-  title: "Berhasil",
-  description: "Anda berhasil masuk",
-});
-
-navigate("/");
-
-      } else {
-        setError(response.message || "Email atau kata sandi salah");
         toast({
-          title: "Gagal",
-          description: response.message || "Login gagal",
-          variant: "destructive",
+          title: "Berhasil",
+          description: "Login sebagai seller berhasil",
         });
+
+        navigate("/admin"); // ⬅️ ARAHKAN KE ADMIN
+        return;
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Terjadi kesalahan saat login";
-      setError(errorMessage);
+
+      // =======================
+      //     BUYER LOGIN
+      // =======================
+      if (user.role === "buyer") {
+        login(user);
+
+        toast({
+          title: "Berhasil",
+          description: "Login berhasil",
+        });
+
+        navigate("/"); // ⬅️ HOME PAG E
+        return;
+      }
+
+    } else {
+      setError(response.message || "Email atau kata sandi salah");
       toast({
-        title: "Kesalahan",
-        description: errorMessage,
+        title: "Gagal",
+        description: response.message || "Login gagal",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
-  };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : "Terjadi kesalahan saat login";
+    setError(errorMessage);
+    toast({
+      title: "Kesalahan",
+      description: errorMessage,
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   return (
     <Layout>

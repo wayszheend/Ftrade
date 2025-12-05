@@ -83,6 +83,17 @@ export interface Order {
   created_at?: string;
   updated_at?: string;
 }
+export interface FarmerVerification {
+  id?: number;
+  user_id: number;
+  farmer_card_number: string;
+  farmer_card_name: string;
+  organization_name: string;
+  organization_id: string;
+  status?: "pending" | "approved" | "rejected";
+  created_at?: string;
+}
+
 
 export interface OrderItem {
   id: number;
@@ -291,5 +302,14 @@ export async function apiUpdateUser(userId: number, updates: Partial<User>): Pro
   return apiCall(`users/${userId}`, {
     method: 'PUT',
     body: JSON.stringify(updates),
+  });
+}
+
+export async function apiFarmerVerification(
+  payload: FarmerVerification
+): Promise<ApiResponse> {
+  return apiCall("farmer-verification", {
+    method: "POST",
+    body: JSON.stringify(payload),
   });
 }

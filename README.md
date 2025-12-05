@@ -228,11 +228,6 @@ POST   /api/payments/notification          Handle payment webhook
 - Poin bisa ditukar untuk diskon otomatis
 - Poin tidak pernah kadaluarsa
 
-### 💳 Secure Payment
-- Integrasi Midtrans
-- Support kartu kredit, bank transfer, e-wallet
-- Transaksi terenkripsi dan aman
-
 ### 📧 Email Notifications
 - Welcome email saat register
 - Order confirmation
@@ -251,27 +246,6 @@ POST   /api/payments/notification          Handle payment webhook
 - Sales reports
 - User statistics
 - Transaction history
-
----
-
-## 🧪 Testing
-
-### API Testing
-
-```bash
-# Register
-curl -X POST http://localhost:3001/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"fullName":"John","email":"john@test.com","password":"test123","phone":"08123456789","role":"buyer"}'
-
-# Login
-curl -X POST http://localhost:3001/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"john@test.com","password":"test123"}'
-
-# Get Products
-curl http://localhost:3001/api/products
-```
 
 ---
 
@@ -314,27 +288,10 @@ SMTP_PORT=587
 SMTP_USER=your_email@gmail.com
 SMTP_PASSWORD=your_app_password
 
-# Payment
-MIDTRANS_SERVER_KEY=your_key
-MIDTRANS_CLIENT_KEY=your_key
-MIDTRANS_ENVIRONMENT=sandbox
-
 # URLs
 APP_URL=http://localhost:5173
 API_URL=http://localhost:3001
 ```
-
----
-
-## 🔒 Security
-
-- ✅ Password hashing dengan bcrypt
-- ✅ JWT token authentication
-- ✅ Input validation dengan Zod
-- ✅ SQL injection prevention
-- ✅ CORS configuration
-- ✅ Rate limiting (optional)
-- ✅ HTTPS/SSL (production)
 
 ---
 
@@ -344,7 +301,6 @@ API_URL=http://localhost:3001
 - ✅ Product browsing & filtering
 - ✅ User authentication
 - ✅ Shopping cart
-- ✅ Email notifications
 - ✅ Points system
 
 ### Phase 2: Payment & Orders (In Progress)
@@ -388,32 +344,12 @@ Jika ada pertanyaan atau masalah:
 
 ---
 
-## 📝 License
-
-Proyek ini dilisensikan di bawah MIT License - lihat file [LICENSE](./LICENSE) untuk detail.
-
----
-
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - React & Vite community
 - Tailwind CSS
 - Midtrans
 - Open source contributors
-
----
-
-## 📊 Project Stats
-
-- 🎯 **Status**: In Active Development
-- 👥 **Contributors**: 1+
-- 📦 **Dependencies**: 30+
-- 🧪 **Test Coverage**: 0% (in progress)
-- 🚀 **Version**: 1.0.0-beta
-
----
-
-**Dibuat dengan ❤️ untuk mendukung petani Indonesia**
 
 ---
 

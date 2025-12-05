@@ -73,7 +73,7 @@ export default function Register() {
       );
 
       if (response.success) {
-        const user = response.data; // ✅ INI YANG SEBELUMNYA HILANG
+        const user = response.data; 
 
         if (user.role === "seller") {
           toast({
